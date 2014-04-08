@@ -24,7 +24,7 @@
 var tape = require('tape');
 var zlib = require('../');
 
-var inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing el' +
+var inputString = '\u03A9\u03A9Lorem ipsum dolor sit amet, consectetur adipiscing el' +
     'it. Morbi faucibus, purus at gravida dictum, libero arcu convallis la' +
     'cus, in commodo libero metus eu nisi. Nullam commodo, neque nec porta' +
     ' placerat, nisi est fermentum augue, vitae gravida tellus sapien sit ' +
