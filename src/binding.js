@@ -210,12 +210,12 @@ Zlib.prototype.close = function() {
 
 Zlib.prototype.reset = function() {
   switch (this.mode) {
-    case DEFLATE:
-    case DEFLATERAW:
+    case exports.DEFLATE:
+    case exports.DEFLATERAW:
       var status = zlib_deflate.deflateReset(this.strm);
       break;
-    case INFLATE:
-    case INFLATERAW:
+    case exports.INFLATE:
+    case exports.INFLATERAW:
       var status = zlib_inflate.inflateReset(this.strm);
       break;
   }
