@@ -18,6 +18,9 @@ exports.DEFLATERAW = 5;
 exports.INFLATERAW = 6;
 exports.UNZIP = 7;
 
+/**
+ * Emulate Node's zlib C++ layer for use by the JS layer in index.js
+ */
 function Zlib(mode) {
   if (mode < exports.DEFLATE || mode > exports.UNZIP)
     throw new TypeError("Bad argument");
