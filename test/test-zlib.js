@@ -62,7 +62,7 @@ if (process.env.FAST) {
 }
 
 var tests = {
-  'peron.jpg': fs.readFileSync(__dirname + '/fixtures/person.jpg'),
+  'person.jpg': fs.readFileSync(__dirname + '/fixtures/person.jpg'),
   'elipses.txt': fs.readFileSync(__dirname + '/fixtures/elipses.txt'),
   'empty.txt': fs.readFileSync(__dirname + '/fixtures/empty.txt')
 };
