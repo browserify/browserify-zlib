@@ -27,11 +27,6 @@
       "android-browser/latest"
     ]
   },
-  "browserify": {
-    "transform": [
-      "brfs"
-    ]
-  },
   "scripts": {
     "test": "node_modules/tape/bin/tape test/*.js"
   },
