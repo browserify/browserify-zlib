@@ -36,5 +36,9 @@
   },
   "main": "src/index.js",
   "author": "Devon Govett <devongovett@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/devongovett/browserify-zlib.git"
+  }
 }
