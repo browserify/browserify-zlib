@@ -64,7 +64,6 @@ RandomReadStream.prototype.pause = function() {
 };
 
 RandomReadStream.prototype.resume = function() {
-  // console.error("rrs resume");
   this._paused = false;
   this.emit('resume');
   this._process();
@@ -101,7 +100,6 @@ RandomReadStream.prototype._process = function() {
 
   this._remaining -= block;
 
-  console.error('block=%d\nremain=%d\n', block, this._remaining);
   this._processing = false;
 
   this.emit('data', buf);
