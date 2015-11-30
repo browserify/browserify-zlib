@@ -36,5 +36,17 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/devongovett/browserify-zlib.git"
+  },
+  "jspm": {
+    "dependencies": {
+      "readable-stream": "^1.0.27-1",
+      "pako": "~0.2.0"
+    },
+    "map": {
+      "_stream_transform": "readable-stream/transform",
+      "./src/index.js": {
+        "node": "@node/zlib"
+      }
+    }
   }
 }
