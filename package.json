@@ -36,5 +36,8 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/devongovett/browserify-zlib.git"
+  },
+  "react-native": {
+    "_stream_transform": "readable-stream/transform"
   }
 }
