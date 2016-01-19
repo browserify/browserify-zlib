@@ -30,7 +30,6 @@
   "scripts": {
     "test": "node_modules/tape/bin/tape test/*.js"
   },
-  "main": "src/index.js",
   "author": "Devon Govett <devongovett@gmail.com>",
   "license": "MIT",
   "repository": {
