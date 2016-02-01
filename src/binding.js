@@ -183,7 +183,10 @@ Zlib.prototype._write = function(flush, input, in_off, in_len, out, out_off, out
       throw new Error("Unknown mode " + this.mode);
   }
   
-  if (status !== exports.Z_STREAM_END && status !== exports.Z_OK) {
+  if (status !== exports.Z_STREAM_END
+      && status !== exports.Z_OK
+      // Issue #14: Bug: Buffer error is not fatal
+      && status !== exports.Z_BUF_ERROR) {
     this._error(status);
   }
   
