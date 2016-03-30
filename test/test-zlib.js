@@ -1,24 +1,5 @@
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+'use strict';
+var common = require('./common');
 var assert = require('assert');
 var zlib = require('../');
 var path = require('path');
@@ -57,15 +38,17 @@ if (!process.env.PUMMEL) {
 
 var fs = require('fs');
 
+var testFiles = ['person.jpg', 'elipses.txt', 'empty.txt'];
+
 if (process.env.FAST) {
   zlibPairs = [[zlib.Gzip, zlib.Unzip]];
+  testFiles = ['person.jpg'];
 }
 
-var tests = {
-  'person.jpg': fs.readFileSync(__dirname + '/fixtures/person.jpg'),
-  'elipses.txt': fs.readFileSync(__dirname + '/fixtures/elipses.txt'),
-  'empty.txt': fs.readFileSync(__dirname + '/fixtures/empty.txt')
-};
+var tests = {};
+testFiles.forEach(function(file) {
+  tests[file] = fs.readFileSync(path.resolve(common.fixturesDir, file));
+});
 
 var util = require('util');
 var stream = require('stream');
@@ -142,19 +125,19 @@ SlowStream.prototype.resume = function() {
 
 SlowStream.prototype.end = function(chunk) {
   // walk over the chunk in blocks.
-  var self = this;
-  self.chunk = chunk;
-  self.length = chunk.length;
-  self.resume();
-  return self.ended;
+  this.chunk = chunk;
+  this.length = chunk.length;
+  this.resume();
+  return this.ended;
 };
-
 
 
 // for each of the files, make sure that compressing and
 // decompressing results in the same data, for every combination
 // of the options set above.
-var tape = require('tape');
+var failures = 0;
+var total = 0;
+var done = 0;
 
 Object.keys(tests).forEach(function(file) {
   var test = tests[file];
@@ -167,40 +150,58 @@ Object.keys(tests).forEach(function(file) {
               zlibPairs.forEach(function(pair) {
                 var Def = pair[0];
                 var Inf = pair[1];
-                var opts = { 
-                  level: level,
+                var opts = { level: level,
                   windowBits: windowBits,
                   memLevel: memLevel,
-                  strategy: strategy
-                };
-                
-                var msg = file + ' ' +
-                    chunkSize + ' ' +
-                    JSON.stringify(opts) + ' ' +
-                    Def.name + ' -> ' + Inf.name;
-                
-                tape('zlib ' + msg, function(t) {
-                  t.plan(1);
-                  
-                  var def = new Def(opts);
-                  var inf = new Inf(opts);
-                  var ss = new SlowStream(trickle);
-                  var buf = new BufferStream();
+                  strategy: strategy };
 
-                  // verify that the same exact buffer comes out the other end.
-                  buf.on('data', function(c) {
-                    t.deepEqual(c, test);
-                  });
+                total++;
 
-                  // the magic happens here.
-                  ss.pipe(def).pipe(inf).pipe(buf);
-                  ss.end(test);
+                var def = new Def(opts);
+                var inf = new Inf(opts);
+                var ss = new SlowStream(trickle);
+                var buf = new BufferStream();
+
+                // verify that the same exact buffer comes out the other end.
+                buf.on('data', function(c) {
+                  var msg = file + ' ' +
+                      chunkSize + ' ' +
+                      JSON.stringify(opts) + ' ' +
+                      Def.name + ' -> ' + Inf.name;
+                  var ok = true;
+                  var testNum = ++done;
+                  for (var i = 0; i < Math.max(c.length, test.length); i++) {
+                    if (c[i] !== test[i]) {
+                      ok = false;
+                      failures++;
+                      break;
+                    }
+                  }
+                  if (ok) {
+                    console.log('ok ' + (testNum) + ' ' + msg);
+                  } else {
+                    console.log('not ok ' + (testNum) + ' ' + msg);
+                    console.log('  ...');
+                    console.log('  testfile: ' + file);
+                    console.log('  type: ' + Def.name + ' -> ' + Inf.name);
+                    console.log('  position: ' + i);
+                    console.log('  options: ' + JSON.stringify(opts));
+                    console.log('  expect: ' + test[i]);
+                    console.log('  actual: ' + c[i]);
+                    console.log('  chunkSize: ' + chunkSize);
+                    console.log('  ---');
+                  }
                 });
+
+                // the magic happens here.
+                ss.pipe(def).pipe(inf).pipe(buf);
+                ss.end(test);
               });
-            });
-          });
-        });
-      });
-    }); 
-  });
+            }); }); }); }); }); }); // sad stallman is sad.
+});
+
+process.on('exit', function(code) {
+  console.log('1..' + done);
+  assert.equal(done, total, (total - done) + ' tests left unfinished');
+  assert.ok(!failures, 'some test failures');
 });

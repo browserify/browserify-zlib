@@ -7,9 +7,11 @@ var closed = false;
 
 zlib.gzip('hello', function(err, out) {
   var unzip = zlib.createGunzip();
-  unzip.write(out);
   unzip.close(function() {
     closed = true;
+  });
+  assert.throws(function() {
+    unzip.write(out);
   });
 });
 

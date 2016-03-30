@@ -1,31 +1,17 @@
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
+'use strict';
+var common = require('./common');
+var assert = require('assert');
 
+if (!common.hasCrypto) {
+  console.log('1..0 # Skipped: missing crypto');
+  return;
+}
 var crypto = require('crypto');
+
 var stream = require('stream');
 var Stream = stream.Stream;
 var util = require('util');
-var tape = require('tape');
 var zlib = require('../');
-
 
 
 // emit random bytes, and keep a shasum
@@ -64,6 +50,7 @@ RandomReadStream.prototype.pause = function() {
 };
 
 RandomReadStream.prototype.resume = function() {
+  // console.error("rrs resume");
   this._paused = false;
   this.emit('resume');
   this._process();
@@ -100,6 +87,7 @@ RandomReadStream.prototype._process = function() {
 
   this._remaining -= block;
 
+  console.error('block=%d\nremain=%d\n', block, this._remaining);
   this._processing = false;
 
   this.emit('data', buf);
@@ -140,37 +128,37 @@ HashStream.prototype.end = function(c) {
   this.emit('end');
 };
 
-tape('random byte pipes', function(t) {
-  var inp = new RandomReadStream({ total: 1024, block: 256, jitter: 16 });
-  var out = new HashStream();
-  var gzip = zlib.createGzip();
-  var gunz = zlib.createGunzip();
 
-  inp.pipe(gzip).pipe(gunz).pipe(out);
+var inp = new RandomReadStream({ total: 1024, block: 256, jitter: 16 });
+var out = new HashStream();
+var gzip = zlib.createGzip();
+var gunz = zlib.createGunzip();
 
-  inp.on('data', function(c) {
-    t.ok(c.length);
-  });
+inp.pipe(gzip).pipe(gunz).pipe(out);
 
-  gzip.on('data', function(c) {
-    t.ok(c.length);
-  });
-
-  gunz.on('data', function(c) {
-    t.ok(c.length);
-  });
-
-  out.on('data', function(c) {
-    t.ok(c.length);
-  });
-
-  out.on('data', function(c) {
-    t.ok(c.length);
-    t.equal(c, inp._hash, 'hashes should match');
-  });
-  
-  out.on('end', function() {
-    t.end();
-  })
+inp.on('data', function(c) {
+  console.error('inp data', c.length);
 });
 
+gzip.on('data', function(c) {
+  console.error('gzip data', c.length);
+});
+
+gunz.on('data', function(c) {
+  console.error('gunz data', c.length);
+});
+
+out.on('data', function(c) {
+  console.error('out data', c.length);
+});
+
+var didSomething = false;
+out.on('data', function(c) {
+  didSomething = true;
+  console.error('hash=%s', c);
+  assert.equal(c, inp._hash, 'hashes should match');
+});
+
+process.on('exit', function() {
+  assert(didSomething, 'should have done something');
+});
