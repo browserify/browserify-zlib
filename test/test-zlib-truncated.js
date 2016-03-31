@@ -2,10 +2,10 @@
 'use strict'
 
 // tests zlib streams with truncated compressed input
-const assert = require('assert')
-const zlib = require('zlib')
+var assert = require('assert')
+var zlib = require('zlib')
 
-const inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing el' +
+var inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing el' +
         'it. Morbi faucibus, purus at gravida dictum, libero arcu convallis la' +
         'cus, in commodo libero metus eu nisi. Nullam commodo, neque nec porta' +
         ' placerat, nisi est fermentum augue, vitae gravida tellus sapien sit ' +
@@ -24,11 +24,11 @@ describe('zlib - truncated', function () {
     it(methods.comp, function (done) {
       zlib[methods.comp](inputString, function (err, compressed) {
         assert(!err)
-        const truncated = compressed.slice(0, compressed.length / 2)
+        var truncated = compressed.slice(0, compressed.length / 2)
 
         // sync sanity
         assert.doesNotThrow(function () {
-          const decompressed = zlib[methods.decompSync](compressed)
+          var decompressed = zlib[methods.decompSync](compressed)
           assert.equal(decompressed, inputString)
         })
 

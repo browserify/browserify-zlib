@@ -15,8 +15,16 @@
   },
   "devDependencies": {
     "brfs": "^1.0.1",
+    "karma": "^0.13.22",
+    "karma-browserify": "^5.0.3",
+    "karma-chrome-launcher": "^0.2.3",
+    "karma-firefox-launcher": "^0.1.7",
+    "karma-mocha": "^0.2.2",
+    "karma-phantomjs-launcher": "^1.0.0",
     "mocha": "^2.4.5",
-    "standard": "^6.0.8"
+    "phantomjs-prebuilt": "^2.1.7",
+    "standard": "^6.0.8",
+    "watchify": "^3.7.0"
   },
   "testling": {
     "files": "test/*.js",
@@ -33,7 +41,9 @@
   },
   "scripts": {
     "lint": "standard",
-    "test": "mocha test/test-*"
+    "test": "npm run test:node && npm run test:browser",
+    "test:browser": "karma start --single-run=true karma.conf.js",
+    "test:node": "mocha test/test-*"
   },
   "author": "Devon Govett <devongovett@gmail.com>",
   "license": "MIT",

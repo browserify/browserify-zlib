@@ -40,17 +40,11 @@ if (!process.env.PUMMEL) {
 
 var fs = require('fs')
 
-var testFiles = ['person.jpg', 'elipses.txt', 'empty.txt']
-
-if (process.env.FAST) {
-  zlibPairs = [[zlib.Gzip, zlib.Unzip]]
-  testFiles = ['person.jpg']
+var tests = {
+  'person.jpg': fs.readFileSync(path.join(__dirname, 'fixtures', 'person.jpg')),
+  'elipses.txt': fs.readFileSync(path.join(__dirname, 'fixtures', 'elipses.txt')),
+  // 'empty.txt': fs.readFileSync(path.join(__dirname, 'fixtures', 'empty.txt'))
 }
-
-var tests = {}
-testFiles.forEach(function (file) {
-  tests[file] = fs.readFileSync(path.resolve(common.fixturesDir, file))
-})
 
 var util = require('util')
 var stream = require('stream')

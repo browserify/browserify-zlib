@@ -2,10 +2,10 @@
 'use strict'
 
 // test compression/decompression with dictionary
-const assert = require('assert')
-const zlib = require('../')
+var assert = require('assert')
+var zlib = require('../')
 
-const spdyDict = new Buffer([
+var spdyDict = new Buffer([
   'optionsgetheadpostputdeletetraceacceptaccept-charsetaccept-encodingaccept-',
   'languageauthorizationexpectfromhostif-modified-sinceif-matchif-none-matchi',
   'f-rangeif-unmodifiedsincemax-forwardsproxy-authorizationrangerefererteuser',
@@ -21,7 +21,7 @@ const spdyDict = new Buffer([
   '.1statusversionurl\0'
 ].join(''))
 
-const input = [
+var input = [
   'HTTP/1.1 200 Ok',
   'Server: node.js',
   'Content-Length: 0',
@@ -30,9 +30,9 @@ const input = [
 
 describe('zlib - dictionary', function () {
   it('basic dictionary', function (done) {
-    let output = ''
-    const deflate = zlib.createDeflate({ dictionary: spdyDict })
-    const inflate = zlib.createInflate({ dictionary: spdyDict })
+    var output = ''
+    var deflate = zlib.createDeflate({ dictionary: spdyDict })
+    var inflate = zlib.createInflate({ dictionary: spdyDict })
 
     deflate.on('data', function (chunk) {
       inflate.write(chunk)
@@ -56,10 +56,10 @@ describe('zlib - dictionary', function () {
   })
 
   it('deflate reset dictionary', function (done) {
-    let doneReset = false
-    let output = ''
-    const deflate = zlib.createDeflate({ dictionary: spdyDict })
-    const inflate = zlib.createInflate({ dictionary: spdyDict })
+    var doneReset = false
+    var output = ''
+    var deflate = zlib.createDeflate({ dictionary: spdyDict })
+    var inflate = zlib.createInflate({ dictionary: spdyDict })
 
     deflate.on('data', function (chunk) {
       if (doneReset) {

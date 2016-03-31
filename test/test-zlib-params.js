@@ -7,16 +7,16 @@ var zlib = require('../')
 var path = require('path')
 var fs = require('fs')
 
-const file = fs.readFileSync(path.resolve(common.fixturesDir, 'person.jpg'))
-const chunkSize = 12 * 1024
-const opts = { level: 9, strategy: zlib.Z_DEFAULT_STRATEGY }
-const deflater = zlib.createDeflate(opts)
+var file = fs.readFileSync(path.join(__dirname, 'fixtures', 'person.jpg'))
+var chunkSize = 12 * 1024
+var opts = { level: 9, strategy: zlib.Z_DEFAULT_STRATEGY }
+var deflater = zlib.createDeflate(opts)
 
-const chunk1 = file.slice(0, chunkSize)
-const chunk2 = file.slice(chunkSize)
-const blkhdr = new Buffer([0x00, 0x5a, 0x82, 0xa5, 0x7d])
-const expected = Buffer.concat([blkhdr, chunk2])
-let actual
+var chunk1 = file.slice(0, chunkSize)
+var chunk2 = file.slice(chunkSize)
+var blkhdr = new Buffer([0x00, 0x5a, 0x82, 0xa5, 0x7d])
+var expected = Buffer.concat([blkhdr, chunk2])
+var actual
 
 describe.skip('zlib - params', function () {
   it('works', function (done) {

@@ -2,8 +2,8 @@
 'use strict'
 
 // test uncompressing invalid input
-const assert = require('assert')
-const zlib = require('../')
+var assert = require('assert')
+var zlib = require('../')
 
 var nonStringInputs = [1, true, {a: 1}, ['a']]
 

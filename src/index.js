@@ -5,9 +5,21 @@ var Transform = require('_stream_transform')
 var binding = require('./binding')
 var util = require('util')
 var assert = require('assert').ok
-var kMaxLength = require('buffer').kMaxLength
+
+function kMaxLength () {
+  var max = require('buffer').kMaxLength
+
+  if (max) {
+    return max
+  } else if (Buffer.TYPED_ARRAY_SUPPORT) {
+    return 0x7fffffff
+  } else {
+    return 0x3fffffff
+  }
+}
+
 var kRangeErrorMessage = 'Cannot create final Buffer. ' +
-  'It would be larger than 0x' + kMaxLength.toString(16) + ' bytes.'
+      'It would be larger than 0x' + kMaxLength().toString(16) + ' bytes.'
 
 // zlib doesn't provide these, so kludge them in following the same
 // var naming scheme zlib uses.
@@ -216,7 +228,7 @@ function zlibBuffer (engine, buffer, callback) {
     var buf
     var err = null
 
-    if (nread >= kMaxLength) {
+    if (nread >= kMaxLength()) {
       err = new RangeError(kRangeErrorMessage)
     } else {
       buf = Buffer.concat(buffers, nread)
@@ -540,7 +552,7 @@ Zlib.prototype._processChunk = function (chunk, flushFlag, cb) {
       throw error
     }
 
-    if (nread >= kMaxLength) {
+    if (nread >= kMaxLength()) {
       this.close()
       throw new RangeError(kRangeErrorMessage)
     }

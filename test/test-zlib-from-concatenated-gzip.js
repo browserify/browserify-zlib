@@ -2,13 +2,13 @@
 'use strict'
 
 // Test unzipping a gzip file that contains multiple concatenated "members"
-const common = require('./common')
-const assert = require('assert')
-const zlib = require('../')
+var common = require('./common')
+var assert = require('assert')
+var zlib = require('../')
 
 describe.skip('zlib - from concatenated gzip', function () {
   it('works', function (done) {
-    const data = Buffer.concat([
+    var data = Buffer.concat([
       zlib.gzipSync('abc'),
       zlib.gzipSync('def')
     ])
