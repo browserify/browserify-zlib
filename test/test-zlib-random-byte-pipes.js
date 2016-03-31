@@ -1,11 +1,7 @@
+/* eslint-env mocha */
 'use strict'
-var common = require('./common')
-var assert = require('assert')
 
-if (!common.hasCrypto) {
-  console.log('1..0 # Skipped: missing crypto')
-// return
-}
+var assert = require('assert')
 var crypto = require('crypto')
 
 var stream = require('stream')
@@ -86,7 +82,7 @@ RandomReadStream.prototype._process = function () {
 
   this._remaining -= block
 
-  console.error('block=%d\nremain=%d\n', block, this._remaining)
+  // console.error('block=%d\nremain=%d\n', block, this._remaining)
   this._processing = false
 
   this.emit('data', buf)
@@ -126,36 +122,41 @@ HashStream.prototype.end = function (c) {
   this.emit('end')
 }
 
-var inp = new RandomReadStream({ total: 1024, block: 256, jitter: 16 })
-var out = new HashStream()
-var gzip = zlib.createGzip()
-var gunz = zlib.createGunzip()
+describe('zlib - random byte pipes', function () {
+  it('works', function (done) {
+    var inp = new RandomReadStream({ total: 1024, block: 256, jitter: 16 })
+    var out = new HashStream()
+    var gzip = zlib.createGzip()
+    var gunz = zlib.createGunzip()
 
-inp.pipe(gzip).pipe(gunz).pipe(out)
+    inp.pipe(gzip).pipe(gunz).pipe(out)
 
-inp.on('data', function (c) {
-  console.error('inp data', c.length)
-})
+    // inp.on('data', function (c) {
+    //   console.error('inp data', c.length)
+    // })
 
-gzip.on('data', function (c) {
-  console.error('gzip data', c.length)
-})
+    // gzip.on('data', function (c) {
+    //   console.error('gzip data', c.length)
+    // })
 
-gunz.on('data', function (c) {
-  console.error('gunz data', c.length)
-})
+    // gunz.on('data', function (c) {
+    //   console.error('gunz data', c.length)
+    // })
 
-out.on('data', function (c) {
-  console.error('out data', c.length)
-})
+    // out.on('data', function (c) {
+    //   console.error('out data', c.length)
+    // })
 
-var didSomething = false
-out.on('data', function (c) {
-  didSomething = true
-  console.error('hash=%s', c)
-  assert.equal(c, inp._hash, 'hashes should match')
-})
+    var didSomething = false
+    out.on('data', function (c) {
+      didSomething = true
+      // console.error('hash=%s', c)
+      assert.equal(c, inp._hash, 'hashes should match')
+    })
 
-process.on('exit', function () {
-  assert(didSomething, 'should have done something')
+    out.on('end', function () {
+      assert(didSomething, 'should have done something')
+      done()
+    })
+  })
 })
