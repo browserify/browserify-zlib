@@ -1,8 +1,9 @@
-'use strict';
-// test compression/decompression with dictionary
+/* eslint-env mocha */
+'use strict'
 
-const assert = require('assert');
-const zlib = require('../');
+// test compression/decompression with dictionary
+const assert = require('assert')
+const zlib = require('../')
 
 const spdyDict = new Buffer([
   'optionsgetheadpostputdeletetraceacceptaccept-charsetaccept-encodingaccept-',
@@ -18,71 +19,73 @@ const spdyDict = new Buffer([
   'pOctNovDecchunkedtext/htmlimage/pngimage/jpgimage/gifapplication/xmlapplic',
   'ation/xhtmltext/plainpublicmax-agecharset=iso-8859-1utf-8gzipdeflateHTTP/1',
   '.1statusversionurl\0'
-].join(''));
+].join(''))
 
 const input = [
   'HTTP/1.1 200 Ok',
   'Server: node.js',
   'Content-Length: 0',
   ''
-].join('\r\n');
+].join('\r\n')
 
-function basicDictionaryTest() {
-  let output = '';
-  const deflate = zlib.createDeflate({ dictionary: spdyDict });
-  const inflate = zlib.createInflate({ dictionary: spdyDict });
+describe('zlib - dictionary', function () {
+  it('basic dictionary', function (done) {
+    let output = ''
+    const deflate = zlib.createDeflate({ dictionary: spdyDict })
+    const inflate = zlib.createInflate({ dictionary: spdyDict })
 
-  deflate.on('data', function(chunk) {
-    inflate.write(chunk);
-  });
+    deflate.on('data', function (chunk) {
+      inflate.write(chunk)
+    })
 
-  inflate.on('data', function(chunk) {
-    output += chunk;
-  });
+    inflate.on('data', function (chunk) {
+      output += chunk
+    })
 
-  deflate.on('end', function() {
-    inflate.end();
-  });
+    deflate.on('end', function () {
+      inflate.end()
+    })
 
-  inflate.on('end', function() {
-    assert.equal(input, output);
-  });
+    inflate.on('end', function () {
+      assert.equal(input, output)
+      done()
+    })
 
-  deflate.write(input);
-  deflate.end();
-}
+    deflate.write(input)
+    deflate.end()
+  })
 
-function deflateResetDictionaryTest() {
-  let doneReset = false;
-  let output = '';
-  const deflate = zlib.createDeflate({ dictionary: spdyDict });
-  const inflate = zlib.createInflate({ dictionary: spdyDict });
+  it('deflate reset dictionary', function (done) {
+    let doneReset = false
+    let output = ''
+    const deflate = zlib.createDeflate({ dictionary: spdyDict })
+    const inflate = zlib.createInflate({ dictionary: spdyDict })
 
-  deflate.on('data', function(chunk) {
-    if (doneReset)
-      inflate.write(chunk);
-  });
+    deflate.on('data', function (chunk) {
+      if (doneReset) {
+        inflate.write(chunk)
+      }
+    })
 
-  inflate.on('data', function(chunk) {
-    output += chunk;
-  });
+    inflate.on('data', function (chunk) {
+      output += chunk
+    })
 
-  deflate.on('end', function() {
-    inflate.end();
-  });
+    deflate.on('end', function () {
+      inflate.end()
+    })
 
-  inflate.on('end', function() {
-    assert.equal(input, output);
-  });
+    inflate.on('end', function () {
+      assert.equal(input, output)
+      done()
+    })
 
-  deflate.write(input);
-  deflate.flush(function() {
-    deflate.reset();
-    doneReset = true;
-    deflate.write(input);
-    deflate.end();
-  });
-}
-
-basicDictionaryTest();
-deflateResetDictionaryTest();
+    deflate.write(input)
+    deflate.flush(function () {
+      deflate.reset()
+      doneReset = true
+      deflate.write(input)
+      deflate.end()
+    })
+  })
+})

@@ -1,36 +1,43 @@
-'use strict';
-var common = require('./common');
-var assert = require('assert');
-var zlib = require('../');
-var path = require('path');
-var fs = require('fs');
+/* eslint-env mocha */
+'use strict'
 
-const file = fs.readFileSync(path.resolve(common.fixturesDir, 'person.jpg'));
-const chunkSize = 16;
-const opts = { level: 0 };
-const deflater = zlib.createDeflate(opts);
+var common = require('./common')
+var assert = require('assert')
+var zlib = require('../')
+var path = require('path')
+var fs = require('fs')
 
-const chunk = file.slice(0, chunkSize);
-const expectedNone = new Buffer([0x78, 0x01]);
-const blkhdr = new Buffer([0x00, 0x10, 0x00, 0xef, 0xff]);
-const adler32 = new Buffer([0x00, 0x00, 0x00, 0xff, 0xff]);
-const expectedFull = Buffer.concat([blkhdr, chunk, adler32]);
-let actualNone;
-let actualFull;
+var file = fs.readFileSync(path.resolve(common.fixturesDir, 'person.jpg'))
+var chunkSize = 16
+var opts = { level: 0 }
+var deflater = zlib.createDeflate(opts)
 
-deflater.write(chunk, function() {
-  deflater.flush(zlib.Z_NO_FLUSH, function() {
-    actualNone = deflater.read();
-    deflater.flush(function() {
-      var bufs = [], buf;
-      while (buf = deflater.read())
-        bufs.push(buf);
-      actualFull = Buffer.concat(bufs);
-    });
-  });
-});
+var chunk = file.slice(0, chunkSize)
+var expectedNone = new Buffer([0x78, 0x01])
+var blkhdr = new Buffer([0x00, 0x10, 0x00, 0xef, 0xff])
+var adler32 = new Buffer([0x00, 0x00, 0x00, 0xff, 0xff])
+var expectedFull = Buffer.concat([blkhdr, chunk, adler32])
+var actualNone
+var actualFull
 
-process.once('exit', function() {
-  assert.deepEqual(actualNone, expectedNone);
-  assert.deepEqual(actualFull, expectedFull);
-});
+describe('zlib - flush', function () {
+  it('works', function (done) {
+    deflater.write(chunk, function () {
+      deflater.flush(zlib.Z_NO_FLUSH, function () {
+        actualNone = deflater.read()
+        deflater.flush(function () {
+          var bufs = []
+          var buf
+          // eslint-disable-next-line
+          while (buf = deflater.read()) {}
+          bufs.push(buf)
+          actualFull = Buffer.concat(bufs)
+          assert.deepEqual(actualNone, expectedNone)
+          assert.deepEqual(actualFull, expectedFull)
+
+          done()
+        })
+      })
+    })
+  })
+})

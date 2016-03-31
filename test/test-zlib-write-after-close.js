@@ -1,20 +1,20 @@
-'use strict';
+/* eslint-env mocha */
+'use strict'
 
-var assert = require('assert');
-var zlib = require('../');
+var assert = require('assert')
+var zlib = require('../')
 
-var closed = false;
-
-zlib.gzip('hello', function(err, out) {
-  var unzip = zlib.createGunzip();
-  unzip.close(function() {
-    closed = true;
-  });
-  assert.throws(function() {
-    unzip.write(out);
-  });
-});
-
-process.on('exit', function() {
-  assert(closed);
-});
+describe('zlib - write after close', function () {
+  it('works', function (done) {
+    zlib.gzip('hello', function (err, out) {
+      if (err) throw err
+      var unzip = zlib.createGunzip()
+      unzip.close(function () {
+        done()
+      })
+      assert.throws(function () {
+        unzip.write(out)
+      })
+    })
+  })
+})
