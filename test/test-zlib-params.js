@@ -18,7 +18,7 @@ const blkhdr = new Buffer([0x00, 0x5a, 0x82, 0xa5, 0x7d])
 const expected = Buffer.concat([blkhdr, chunk2])
 let actual
 
-describe('zlib - params', function () {
+describe.skip('zlib - params', function () {
   it('works', function (done) {
     deflater.write(chunk1, function () {
       deflater.params(0, zlib.Z_DEFAULT_STRATEGY, function () {

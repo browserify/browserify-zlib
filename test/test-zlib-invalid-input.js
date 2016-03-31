@@ -9,13 +9,20 @@ var nonStringInputs = [1, true, {a: 1}, ['a']]
 
 describe('zlib - invalid input', function () {
   it('non strings', function (done) {
+    var i = 0
+    var finish = function () {
+      i++
+      if (i === 3) {
+        done()
+      }
+    }
     nonStringInputs.forEach(function (input) {
       // zlib.gunzip should not throw an error when called with bad input.
       assert.doesNotThrow(function () {
         zlib.gunzip(input, function (err, buffer) {
           // zlib.gunzip should pass the error to the callback.
           assert.ok(err)
-          done()
+          finish()
         })
       })
     })
@@ -35,6 +42,7 @@ describe('zlib - invalid input', function () {
       hadError[i] = true
       if (hadError.length === 4) {
         assert.deepEqual(hadError, [true, true, true, true], 'expect 4 errors')
+        done()
       }
     }
     unzips.forEach(function (uz, i) {
