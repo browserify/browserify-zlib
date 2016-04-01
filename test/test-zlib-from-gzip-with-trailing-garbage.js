@@ -16,7 +16,7 @@ describe.skip('zlib - from gzip with trailing garbage', function () {
 
     assert.equal(zlib.gunzipSync(data).toString(), 'abcdef')
 
-    zlib.gunzip(data, common.mustCall((err, result) => {
+    zlib.gunzip(data, common.mustCall(function (err, result) {
       assert.ifError(err)
       assert.equal(result, 'abcdef', 'result should match original string')
       done()
@@ -31,9 +31,11 @@ describe.skip('zlib - from gzip with trailing garbage', function () {
       Buffer(10).fill(0)
     ])
 
-    assert.throws(() => zlib.gunzipSync(data))
+    assert.throws(function () {
+      zlib.gunzipSync(data)
+    })
 
-    zlib.gunzip(data, common.mustCall((err, result) => {
+    zlib.gunzip(data, common.mustCall(function (err, result) {
       assert(err)
       done()
     }))
@@ -48,7 +50,7 @@ describe.skip('zlib - from gzip with trailing garbage', function () {
 
     assert.equal(zlib.gunzipSync(data).toString(), 'abcdef')
 
-    zlib.gunzip(data, common.mustCall((err, result) => {
+    zlib.gunzip(data, common.mustCall(function (err, result) {
       assert.ifError(err)
       assert.equal(result, 'abcdef', 'result should match original string')
       done()

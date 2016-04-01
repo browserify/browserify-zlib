@@ -5,7 +5,7 @@ var assert = require('assert')
 var common = require('./common')
 var zlib = require('../')
 
-describe.skip('zlib - dictionary fails', function () {
+describe('zlib - dictionary fails', function () {
   it('should fail on missing dictionary', function (done) {
     // Should raise an error, not trigger an assertion in src/node_zlib.cc
     var stream = zlib.createInflate()

@@ -3,8 +3,8 @@
 
 var zlib = require('../')
 
-describe('zlib', function () {
-  it('closes after write', function (done) {
+describe('zlib - close after write', function () {
+  it('works', function (done) {
     zlib.gzip('hello', function (err, out) {
       if (err) throw err
       var unzip = zlib.createGunzip()

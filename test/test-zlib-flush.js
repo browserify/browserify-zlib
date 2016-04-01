@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 'use strict'
 
-var common = require('./common')
 var assert = require('assert')
 var zlib = require('../')
 var path = require('path')
@@ -9,7 +8,7 @@ var fs = require('fs')
 
 describe.skip('zlib - flush', function () {
   it('works', function (done) {
-    var file = fs.readFileSync(path.resolve(common.fixturesDir, 'person.jpg'))
+    var file = fs.readFileSync(path.join(__dirname, 'fixtures', 'person.jpg'))
     var chunkSize = 16
     var opts = { level: 0 }
     var deflater = zlib.createDeflate(opts)

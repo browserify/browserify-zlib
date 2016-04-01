@@ -42,7 +42,7 @@ Zlib.prototype.init = function (windowBits, level, memLevel, strategy, dictionar
   this.level = level
   this.memLevel = memLevel
   this.strategy = strategy
-  // dictionary not supported.
+  this.dictionary = dictionary
 
   if (this.mode === exports.GZIP || this.mode === exports.GUNZIP) {
     this.windowBits += 16
@@ -193,7 +193,7 @@ Zlib.prototype._write = function (flush, input, in_off, in_len, out, out_off, ou
   }
 
   if (status !== exports.Z_STREAM_END && status !== exports.Z_OK) {
-    this._error(status)
+    this._error(status, flush)
   }
 
   this.write_in_progress = false
@@ -235,8 +235,33 @@ Zlib.prototype.reset = function () {
   }
 }
 
-Zlib.prototype._error = function (status) {
-  this.onerror(msg[status] + ': ' + this.strm.msg, status)
+Zlib.prototype._error = function (status, flush) {
+  var errMsg
+
+  switch (status) {
+    case exports.Z_OK:
+    case exports.Z_BUF_ERROR:
+      if (this.strm.avail_out !== 0 && flush === exports.Z_FINISH) {
+        errMsg = 'unexpected end of file'
+      } else {
+        errMsg = msg[status]
+      }
+      break
+    case exports.Z_STREAM_END:
+      // normal statuses, not fatal
+      break
+    case exports.Z_NEED_DICT:
+      if (!this.dictionary) {
+        errMsg = 'Missing dictionary'
+      } else {
+        errMsg = 'Bad dictionary'
+      }
+      break
+    default:
+      errMsg = status[msg]
+  }
+
+  this.onerror(errMsg, status)
 
   this.write_in_progress = false
   if (this.pending_close) {

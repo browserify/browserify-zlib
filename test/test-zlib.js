@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 'use strict'
 
-var common = require('./common')
 var zlib = require('../')
 var path = require('path')
 
@@ -43,7 +42,7 @@ var fs = require('fs')
 var tests = {
   'person.jpg': fs.readFileSync(path.join(__dirname, 'fixtures', 'person.jpg')),
   'elipses.txt': fs.readFileSync(path.join(__dirname, 'fixtures', 'elipses.txt')),
-  // 'empty.txt': fs.readFileSync(path.join(__dirname, 'fixtures', 'empty.txt'))
+  'empty.txt': new Buffer('')
 }
 
 var util = require('util')

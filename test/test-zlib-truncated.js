@@ -3,7 +3,7 @@
 
 // tests zlib streams with truncated compressed input
 var assert = require('assert')
-var zlib = require('zlib')
+var zlib = require('../')
 
 var inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing el' +
         'it. Morbi faucibus, purus at gravida dictum, libero arcu convallis la' +
