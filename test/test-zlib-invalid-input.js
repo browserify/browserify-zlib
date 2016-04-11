@@ -1,62 +1,61 @@
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
+/* eslint-env mocha */
+'use strict'
 
 // test uncompressing invalid input
+var assert = require('assert')
+var zlib = require('../')
 
-var tape = require('tape'),
-    zlib = require('../');
+var nonStringInputs = [1, true, {a: 1}, ['a']]
 
-tape('non-strings', function(t) {
-  var nonStringInputs = [1, true, {a: 1}, ['a']];
-  t.plan(12);
+describe('zlib - invalid input', function () {
+  it('non strings', function (done) {
+    var i = 0
+    var finish = function () {
+      i++
+      if (i === 3) {
+        done()
+      }
+    }
+    nonStringInputs.forEach(function (input) {
+      // zlib.gunzip should not throw an error when called with bad input.
+      assert.doesNotThrow(function () {
+        zlib.gunzip(input, function (err, buffer) {
+          // zlib.gunzip should pass the error to the callback.
+          assert.ok(err)
+          finish()
+        })
+      })
+    })
+  })
 
-  nonStringInputs.forEach(function(input) {
-    // zlib.gunzip should not throw an error when called with bad input.
-    t.doesNotThrow(function() {
-      zlib.gunzip(input, function(err, buffer) {
-        // zlib.gunzip should pass the error to the callback.
-        t.ok(err);
-      });
-    });
-  });
-});
+  it('unzips', function (done) {
+    // zlib.Unzip classes need to get valid data, or else they'll throw.
+    var unzips = [
+      zlib.Unzip(),
+      zlib.Gunzip(),
+      zlib.Inflate(),
+      zlib.InflateRaw()
+    ]
+    var hadError = []
 
-tape('unzips', function(t) {
-  // zlib.Unzip classes need to get valid data, or else they'll throw.
-  var unzips = [ zlib.Unzip(),
-                 zlib.Gunzip(),
-                 zlib.Inflate(),
-                 zlib.InflateRaw() ];
-                 
-  t.plan(4);
-  unzips.forEach(function (uz, i) {
-    uz.on('error', function(er) {
-      t.ok(er);
-    });
+    var finish = function (i) {
+      hadError[i] = true
+      if (hadError.length === 4) {
+        assert.deepEqual(hadError, [true, true, true, true], 'expect 4 errors')
+        done()
+      }
+    }
+    unzips.forEach(function (uz, i) {
+      uz.on('error', function (er) {
+        finish(i)
+      })
 
-    uz.on('end', function(er) {
-      throw new Error('end event should not be emitted '+uz.constructor.name);
-    });
+      uz.on('end', function (er) {
+        throw new Error('end event should not be emitted ' + uz.constructor.name)
+      })
 
-    // this will trigger error event
-    uz.write('this is not valid compressed data.');
-  });
-});
+      // this will trigger error event
+      uz.write('this is not valid compressed data.')
+    })
+  })
+})

@@ -2,17 +2,30 @@
   "name": "browserify-zlib",
   "version": "0.1.4",
   "description": "Full zlib module for browserify",
-  "keywords": ["zlib", "browserify"],
-  "main": "index.js",
+  "keywords": [
+    "zlib",
+    "browserify"
+  ],
+  "main": "src/index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
-    "pako": "~0.2.0"
+    "pako": "~1.0.1"
   },
   "devDependencies": {
-    "tape": "^2.12.3",
-    "brfs": "^1.0.1"
+    "brfs": "^1.0.1",
+    "karma": "^0.13.22",
+    "karma-browserify": "^5.0.3",
+    "karma-chrome-launcher": "^0.2.3",
+    "karma-firefox-launcher": "^0.1.7",
+    "karma-mocha": "^0.2.2",
+    "karma-mocha-own-reporter": "^1.1.2",
+    "karma-phantomjs-launcher": "^1.0.0",
+    "mocha": "^2.4.5",
+    "phantomjs-prebuilt": "^2.1.7",
+    "standard": "^6.0.8",
+    "watchify": "^3.7.0"
   },
   "testling": {
     "files": "test/*.js",
@@ -28,9 +41,11 @@
     ]
   },
   "scripts": {
-    "test": "node_modules/tape/bin/tape test/*.js"
+    "lint": "standard",
+    "test": "npm run test:node && npm run test:browser",
+    "test:browser": "karma start --single-run=true karma.conf.js",
+    "test:node": "mocha test/test-*"
   },
-  "main": "src/index.js",
   "author": "Devon Govett <devongovett@gmail.com>",
   "license": "MIT",
   "repository": {
