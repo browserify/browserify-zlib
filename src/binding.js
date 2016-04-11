@@ -1,4 +1,7 @@
-var msg = require('pako/lib/zlib/messages')
+'use strict'
+
+var assert = require('assert')
+
 var Zstream = require('pako/lib/zlib/zstream')
 var zlib_deflate = require('pako/lib/zlib/deflate.js')
 var zlib_inflate = require('pako/lib/zlib/inflate.js')
@@ -18,132 +21,76 @@ exports.DEFLATERAW = 5
 exports.INFLATERAW = 6
 exports.UNZIP = 7
 
+var GZIP_HEADER_ID1 = 0x1f
+var GZIP_HEADER_ID2 = 0x8b
+var GZIP_MIN_HEADER_SIZE = 10
+
 /**
  * Emulate Node's zlib C++ layer for use by the JS layer in index.js
  */
 function Zlib (mode) {
-  if (mode < exports.DEFLATE || mode > exports.UNZIP) {
+  if (mode == null || mode < exports.DEFLATE || mode > exports.UNZIP) {
     throw new TypeError('Bad argument')
   }
 
-  this.mode = mode
+  this.chunk_size = 0
+  this.dictionary = null
+  this.err = 0
+  this.flush = 0
   this.init_done = false
-  this.write_in_progress = false
-  this.pending_close = false
-  this.windowBits = 0
   this.level = 0
   this.memLevel = 0
+  this.mode = mode
   this.strategy = 0
-  this.dictionary = null
+  this.windowBits = 0
+  this.write_in_progress = false
+  this.pending_close = false
 }
 
-Zlib.prototype.init = function (windowBits, level, memLevel, strategy, dictionary) {
-  this.windowBits = windowBits
-  this.level = level
-  this.memLevel = memLevel
-  this.strategy = strategy
-  this.dictionary = dictionary
-
-  if (this.mode === exports.GZIP || this.mode === exports.GUNZIP) {
-    this.windowBits += 16
-  }
-
-  if (this.mode === exports.UNZIP) {
-    this.windowBits += 32
-  }
-
-  if (this.mode === exports.DEFLATERAW || this.mode === exports.INFLATERAW) {
-    this.windowBits = -this.windowBits
-  }
-
-  this.strm = new Zstream()
-  var status
-
-  switch (this.mode) {
-    case exports.DEFLATE:
-    case exports.GZIP:
-    case exports.DEFLATERAW:
-      status = zlib_deflate.deflateInit2(
-        this.strm,
-        this.level,
-        exports.Z_DEFLATED,
-        this.windowBits,
-        this.memLevel,
-        this.strategy
-      )
-      break
-    case exports.INFLATE:
-    case exports.GUNZIP:
-    case exports.INFLATERAW:
-    case exports.UNZIP:
-      status = zlib_inflate.inflateInit2(
-        this.strm,
-        this.windowBits
-      )
-      break
-    default:
-      throw new Error('Unknown mode ' + this.mode)
-  }
-
-  if (status !== exports.Z_OK) {
-    this._error(status)
+Zlib.prototype.close = function () {
+  if (this.write_in_progress) {
+    this.pending_close = true
     return
   }
 
-  this.write_in_progress = false
-  this.init_done = true
-}
+  this.pending_close = false
 
-Zlib.prototype.params = function () {
-  throw new Error('deflateParams Not supported')
-}
+  assert(this.init_done, 'close before init')
+  assert(this.mode <= exports.UNZIP)
 
-Zlib.prototype._writeCheck = function () {
-  if (!this.init_done) {
-    throw new Error('write before init')
+  if (this.mode === exports.DEFLATE || this.mode === exports.GZIP || this.mode === exports.DEFLATERAW) {
+    zlib_deflate.deflateEnd(this.strm)
+  } else {
+    zlib_inflate.inflateEnd(this.strm)
   }
-  if (this.mode === exports.NONE) {
-    throw new Error('already finalized')
-  }
-  if (this.write_in_progress) {
-    throw new Error('write already in progress')
-  }
-  if (this.pending_close) {
-    throw new Error('close is pending')
+
+  this.mode = exports.NONE
+
+  if (this.dictionary != null) {
+    this.dictionary = null
   }
 }
 
 Zlib.prototype.write = function (flush, input, in_off, in_len, out, out_off, out_len) {
-  this._writeCheck()
-  this.write_in_progress = true
-
-  var self = this
-  process.nextTick(function () {
-    self.write_in_progress = false
-    var res = self._write(flush, input, in_off, in_len, out, out_off, out_len)
-    self.callback(res[0], res[1])
-
-    if (self.pending_close) {
-      self.close()
-    }
-  })
-
-  return this
-}
-
-// set method for Node buffers, used by pako
-function bufferSet (data, offset) {
-  for (var i = 0; i < data.length; i++) {
-    this[offset + i] = data[i]
-  }
+  return this._write(true, flush, input, in_off, in_len, out, out_off, out_len)
 }
 
 Zlib.prototype.writeSync = function (flush, input, in_off, in_len, out, out_off, out_len) {
-  this._writeCheck()
-  return this._write(flush, input, in_off, in_len, out, out_off, out_len)
+  return this._write(false, flush, input, in_off, in_len, out, out_off, out_len)
 }
 
-Zlib.prototype._write = function (flush, input, in_off, in_len, out, out_off, out_len) {
+Zlib.prototype._write = function (async, flush, input, in_off, in_len, out, out_off, out_len) {
+  assert.equal(arguments.length, 8)
+
+  assert(this.init_done, 'write before init')
+  assert(this.mode !== exports.NONE, 'already finalized')
+  assert.equal(false, this.write_in_progress, 'write already in progress')
+  assert.equal(false, this.pending_close, 'close is pending')
+
+  this.write_in_progress = true
+
+  assert.equal(false, flush === undefined, 'must provide flush value')
+
   this.write_in_progress = true
 
   if (flush !== exports.Z_NO_FLUSH &&
@@ -167,105 +114,286 @@ Zlib.prototype._write = function (flush, input, in_off, in_len, out, out_off, ou
     out.set = bufferSet
   }
 
-  var strm = this.strm
-  strm.avail_in = in_len
-  strm.input = input
-  strm.next_in = in_off
-  strm.avail_out = out_len
-  strm.output = out
-  strm.next_out = out_off
+  this.strm.avail_in = in_len
+  this.strm.input = input
+  this.strm.next_in = in_off
+  this.strm.avail_out = out_len
+  this.strm.output = out
+  this.strm.next_out = out_off
+  this.flush = flush
 
-  var status
+  this.chunk_size = out_len
+
+  if (!async) {
+    // sync version
+    this._process()
+
+    if (this._checkError()) {
+      return this._afterSync()
+    }
+    return
+  }
+
+  // async version
+  var self = this
+  process.nextTick(function () {
+    self._process()
+    self._after()
+  })
+
+  return this
+}
+
+Zlib.prototype._afterSync = function () {
+  var avail_out = this.strm.avail_out
+  var avail_in = this.strm.avail_in
+
+  this.write_in_progress = false
+
+  return [avail_in, avail_out]
+}
+
+Zlib.prototype._process = function () {
+  // If the avail_out is left at 0, then it means that it ran out
+  // of room.  If there was avail_out left over, then it means
+  // that all of the input was consumed.
   switch (this.mode) {
     case exports.DEFLATE:
     case exports.GZIP:
     case exports.DEFLATERAW:
-      status = zlib_deflate.deflate(strm, flush)
+      this.err = zlib_deflate.deflate(this.strm, this.flush)
       break
     case exports.UNZIP:
     case exports.INFLATE:
     case exports.GUNZIP:
     case exports.INFLATERAW:
-      status = zlib_inflate.inflate(strm, flush)
+      this.err = zlib_inflate.inflate(this.strm, this.flush)
+
+      // If data was encoded with dictionary
+      if (this.err === exports.Z_NEED_DICT && this.dictionary) {
+        // Load it
+        this.err = zlib_inflate.inflateSetDictionary(this.strm, this.dictionary)
+        if (this.err === exports.Z_OK) {
+          // And try to decode again
+          this.err = zlib_inflate.inflate(this.strm, this.flush)
+        } else if (this.err === exports.Z_DATA_ERROR) {
+          // Both inflateSetDictionary() and inflate() return Z_DATA_ERROR.
+          // Make it possible for After() to tell a bad dictionary from bad
+          // input.
+          this.err = exports.Z_NEED_DICT
+        }
+      }
+      while (this.strm.avail_in >= GZIP_MIN_HEADER_SIZE &&
+             this.mode === exports.GUNZIP) {
+        // Bytes remain in input buffer. Perhaps this is another compressed
+        // member in the same archive, or just trailing garbage.
+        // Check the header to find out.
+        if (this.strm.next_in[0] !== GZIP_HEADER_ID1 ||
+            this.strm.next_in[1] !== GZIP_HEADER_ID2) {
+          // Not a valid gzip member
+          break
+        }
+        this.reset()
+        this.err = zlib_inflate.inflate(this.strm, this.flush)
+      }
       break
     default:
       throw new Error('Unknown mode ' + this.mode)
   }
-
-  if (status !== exports.Z_STREAM_END && status !== exports.Z_OK) {
-    this._error(status, flush)
-  }
-
-  this.write_in_progress = false
-  return [strm.avail_in, strm.avail_out]
 }
 
-Zlib.prototype.close = function () {
-  if (this.write_in_progress) {
-    this.pending_close = true
-    return
-  }
-
-  this.pending_close = false
-
-  if (this.mode === exports.DEFLATE || this.mode === exports.GZIP || this.mode === exports.DEFLATERAW) {
-    zlib_deflate.deflateEnd(this.strm)
-  } else {
-    zlib_inflate.inflateEnd(this.strm)
-  }
-
-  this.mode = exports.NONE
-}
-
-Zlib.prototype.reset = function () {
-  var status
-  switch (this.mode) {
-    case exports.DEFLATE:
-    case exports.DEFLATERAW:
-      status = zlib_deflate.deflateReset(this.strm)
-      break
-    case exports.INFLATE:
-    case exports.INFLATERAW:
-      status = zlib_inflate.inflateReset(this.strm)
-      break
-  }
-
-  if (status !== exports.Z_OK) {
-    this._error(status)
-  }
-}
-
-Zlib.prototype._error = function (status, flush) {
-  var errMsg
-
-  switch (status) {
+Zlib.prototype._checkError = function () {
+  // Acceptable error states depend on the type of zlib stream.
+  switch (this.err) {
     case exports.Z_OK:
     case exports.Z_BUF_ERROR:
-      if (this.strm.avail_out !== 0 && flush === exports.Z_FINISH) {
-        errMsg = 'unexpected end of file'
-      } else {
-        errMsg = msg[status]
+      if (this.strm.avail_out !== 0 && this.flush === exports.Z_FINISH) {
+        this._error('unexpected end of file')
+        return false
       }
       break
     case exports.Z_STREAM_END:
       // normal statuses, not fatal
       break
     case exports.Z_NEED_DICT:
-      if (!this.dictionary) {
-        errMsg = 'Missing dictionary'
+      if (this.dictionary == null) {
+        this._error('Missing dictionary')
       } else {
-        errMsg = 'Bad dictionary'
+        this._error('Bad dictionary')
       }
-      break
+      return false
     default:
-      errMsg = status[msg]
+      // something else.
+      this._error('Zlib error')
+      return false
   }
 
-  this.onerror(errMsg, status)
+  return true
+}
 
+Zlib.prototype._after = function () {
+  if (!this._checkError()) {
+    return
+  }
+
+  var avail_out = this.strm.avail_out
+  var avail_in = this.strm.avail_in
+
+  this.write_in_progress = false
+
+  // call the write() cb
+  this.callback(avail_in, avail_out)
+
+  if (this.pending_close) {
+    this.close()
+  }
+}
+
+Zlib.prototype._error = function (message) {
+  this.onerror(message, this.err)
+
+  // no hope of rescue.
   this.write_in_progress = false
   if (this.pending_close) {
     this.close()
+  }
+}
+
+Zlib.prototype.init = function (windowBits, level, memLevel, strategy, dictionary) {
+  assert(arguments.length === 4 || arguments.length === 5, 'init(windowBits, level, memLevel, strategy, [dictionary])')
+
+  assert(windowBits >= 6 && windowBits <= 15, 'invalid windowBits')
+  assert(level >= -1 && level <= 9, 'invalid compression level')
+
+  assert(memLevel >= 1 && memLevel <= 9, 'invalid memlevel')
+
+  assert(strategy === exports.Z_FILTERED ||
+         strategy === exports.Z_HUFFMAN_ONLY ||
+         strategy === exports.Z_RLE ||
+         strategy === exports.Z_FIXED ||
+         strategy === exports.Z_DEFAULT_STRATEGY, 'invalid strategy')
+
+  this._init(level, windowBits, memLevel, strategy, dictionary)
+  this._setDictionary()
+}
+
+Zlib.prototype.params = function () {
+  throw new Error('deflateParams Not supported')
+}
+
+Zlib.prototype.reset = function () {
+  this._reset()
+  this._setDictionary()
+}
+
+Zlib.prototype._init = function (level, windowBits, memLevel, strategy, dictionary) {
+  this.level = level
+  this.windowBits = windowBits
+  this.memLevel = memLevel
+  this.strategy = strategy
+
+  this.flush = exports.Z_NO_FLUSH
+
+  this.err = exports.Z_OK
+
+  if (this.mode === exports.GZIP || this.mode === exports.GUNZIP) {
+    this.windowBits += 16
+  }
+
+  if (this.mode === exports.UNZIP) {
+    this.windowBits += 32
+  }
+
+  if (this.mode === exports.DEFLATERAW || this.mode === exports.INFLATERAW) {
+    this.windowBits = -1 * this.windowBits
+  }
+
+  this.strm = new Zstream()
+
+  switch (this.mode) {
+    case exports.DEFLATE:
+    case exports.GZIP:
+    case exports.DEFLATERAW:
+      this.err = zlib_deflate.deflateInit2(
+        this.strm,
+        this.level,
+        exports.Z_DEFLATED,
+        this.windowBits,
+        this.memLevel,
+        this.strategy
+      )
+      break
+    case exports.INFLATE:
+    case exports.GUNZIP:
+    case exports.INFLATERAW:
+    case exports.UNZIP:
+      this.err = zlib_inflate.inflateInit2(
+        this.strm,
+        this.windowBits
+      )
+      break
+    default:
+      throw new Error('Unknown mode ' + this.mode)
+  }
+
+  if (this.err !== exports.Z_OK) {
+    this._error('Init error')
+  }
+
+  this.dictionary = dictionary
+
+  this.write_in_progress = false
+  this.init_done = true
+}
+
+Zlib.prototype._setDictionary = function () {
+  if (this.dictionary == null) {
+    return
+  }
+
+  this.err = exports.Z_OK
+
+  switch (this.mode) {
+    case exports.DEFLATE:
+    case exports.DEFLATERAW:
+      this.err = zlib_deflate.deflateSetDictionary(this.strm, this.dictionary)
+      break
+    default:
+      break
+  }
+
+  if (this.err !== exports.Z_OK) {
+    this._error('Failed to set dictionary')
+  }
+}
+
+Zlib.prototype._reset = function () {
+  this.err = exports.Z_OK
+
+  switch (this.mode) {
+    case exports.DEFLATE:
+    case exports.DEFLATERAW:
+    case exports.GZIP:
+      this.err = zlib_deflate.deflateReset(this.strm)
+      break
+    case exports.INFLATE:
+    case exports.INFLATERAW:
+    case exports.GUNZIP:
+      this.err = zlib_inflate.inflateReset(this.strm)
+      break
+    default:
+      break
+  }
+
+  if (this.err !== exports.Z_OK) {
+    this._error('Failed to reset stream')
+  }
+}
+
+// set method for Node buffers, used by pako
+function bufferSet (data, offset) {
+  for (var i = 0; i < data.length; i++) {
+    this[offset + i] = data[i]
   }
 }
 
