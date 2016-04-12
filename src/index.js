@@ -1,7 +1,7 @@
 'use strict'
 
 var Buffer = require('buffer').Buffer
-var Transform = require('_stream_transform')
+var Transform = require('stream').Transform
 var binding = require('./binding')
 var util = require('util')
 var assert = require('assert').ok
