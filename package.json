@@ -6,7 +6,7 @@
     "zlib",
     "browserify"
   ],
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "directories": {
     "test": "test"
   },
@@ -14,6 +14,8 @@
     "pako": "~1.0.1"
   },
   "devDependencies": {
+    "babel-cli": "^6.11.4",
+    "babel-preset-es2015": "^6.13.2",
     "brfs": "^1.0.1",
     "karma": "^1.1.0",
     "karma-browserify": "^5.0.3",
@@ -28,10 +30,17 @@
     "watchify": "^3.7.0"
   },
   "scripts": {
-    "lint": "standard",
+    "build": "babel src --out-dir lib",
+    "lint": "standard \"src/binding.js\" \"test/**/*.js\"",
+    "pretest": "npm run build",
     "test": "npm run test:node && npm run test:browser",
     "test:browser": "karma start --single-run=true karma.conf.js",
     "test:node": "mocha test/test-*"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
   },
   "author": "Devon Govett <devongovett@gmail.com>",
   "license": "MIT",
