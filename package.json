@@ -40,7 +40,7 @@
     "lint": "standard \"*.js\" \"!(node_modules|lib)/!(*test-zlib*|index).js\"",
     "pretest": "npm run build",
     "test": "npm run test:node && npm run test:browser",
-    "test:node": "exec-glob node test/test-*",
+    "test:node": "node node_modules/exec-glob node \"test/test-*\"",
     "pretest:browser": "node test/build",
     "test:browser": "karma start --single-run=true karma.conf.js"
   },
