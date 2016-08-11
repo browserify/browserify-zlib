@@ -1,4 +1,5 @@
 'use strict'
+/* eslint camelcase: "off" */
 
 var assert = require('assert')
 
@@ -23,17 +24,15 @@ exports.UNZIP = 7
 
 var GZIP_HEADER_ID1 = 0x1f
 var GZIP_HEADER_ID2 = 0x8b
-var GZIP_MIN_HEADER_SIZE = 10
 
 /**
  * Emulate Node's zlib C++ layer for use by the JS layer in index.js
  */
 function Zlib (mode) {
-  if (mode == null || mode < exports.DEFLATE || mode > exports.UNZIP) {
+  if (typeof mode !== 'number' || mode < exports.DEFLATE || mode > exports.UNZIP) {
     throw new TypeError('Bad argument')
   }
 
-  this.chunk_size = 0
   this.dictionary = null
   this.err = 0
   this.flush = 0
@@ -45,6 +44,7 @@ function Zlib (mode) {
   this.windowBits = 0
   this.write_in_progress = false
   this.pending_close = false
+  this.gzip_id_bytes_read = 0
 }
 
 Zlib.prototype.close = function () {
@@ -60,15 +60,14 @@ Zlib.prototype.close = function () {
 
   if (this.mode === exports.DEFLATE || this.mode === exports.GZIP || this.mode === exports.DEFLATERAW) {
     zlib_deflate.deflateEnd(this.strm)
-  } else {
+  } else if (this.mode === exports.INFLATE || this.mode === exports.GUNZIP ||
+      this.mode === exports.INFLATERAW || this.mode === exports.UNZIP) {
     zlib_inflate.inflateEnd(this.strm)
   }
 
   this.mode = exports.NONE
 
-  if (this.dictionary != null) {
-    this.dictionary = null
-  }
+  this.dictionary = null
 }
 
 Zlib.prototype.write = function (flush, input, in_off, in_len, out, out_off, out_len) {
@@ -108,12 +107,6 @@ Zlib.prototype._write = function (async, flush, input, in_off, in_len, out, out_
     in_off = 0
   }
 
-  if (out._set) {
-    out.set = out._set
-  } else {
-    out.set = bufferSet
-  }
-
   this.strm.avail_in = in_len
   this.strm.input = input
   this.strm.next_in = in_off
@@ -121,8 +114,6 @@ Zlib.prototype._write = function (async, flush, input, in_off, in_len, out, out_
   this.strm.output = out
   this.strm.next_out = out_off
   this.flush = flush
-
-  this.chunk_size = out_len
 
   if (!async) {
     // sync version
@@ -154,6 +145,8 @@ Zlib.prototype._afterSync = function () {
 }
 
 Zlib.prototype._process = function () {
+  var next_expected_header_byte = null
+
   // If the avail_out is left at 0, then it means that it ran out
   // of room.  If there was avail_out left over, then it means
   // that all of the input was consumed.
@@ -164,6 +157,50 @@ Zlib.prototype._process = function () {
       this.err = zlib_deflate.deflate(this.strm, this.flush)
       break
     case exports.UNZIP:
+      if (this.strm.avail_in > 0) {
+        next_expected_header_byte = this.strm.next_in
+      }
+
+      switch (this.gzip_id_bytes_read) {
+        case 0:
+          if (next_expected_header_byte === null) {
+            break
+          }
+
+          if (this.strm.input[next_expected_header_byte] === GZIP_HEADER_ID1) {
+            this.gzip_id_bytes_read = 1
+            next_expected_header_byte++
+
+            if (this.strm.avail_in === 1) {
+              // The only available byte was already read.
+              break
+            }
+          } else {
+            this.mode = exports.INFLATE
+            break
+          }
+
+          // fallthrough
+        case 1:
+          if (next_expected_header_byte === null) {
+            break
+          }
+
+          if (this.strm.input[next_expected_header_byte] === GZIP_HEADER_ID2) {
+            this.gzip_id_bytes_read = 2
+            this.mode = exports.GUNZIP
+          } else {
+            // There is no actual difference between INFLATE and INFLATERAW
+            // (after initialization).
+            this.mode = exports.INFLATE
+          }
+
+          break
+        default:
+          throw new Error('invalid number of gzip magic number bytes read')
+      }
+
+      // fallthrough
     case exports.INFLATE:
     case exports.GUNZIP:
     case exports.INFLATERAW:
@@ -183,16 +220,15 @@ Zlib.prototype._process = function () {
           this.err = exports.Z_NEED_DICT
         }
       }
-      while (this.strm.avail_in >= GZIP_MIN_HEADER_SIZE &&
-             this.mode === exports.GUNZIP) {
+      while (this.strm.avail_in > 0 &&
+             this.mode === exports.GUNZIP &&
+             this.err === exports.Z_STREAM_END &&
+             this.strm.next_in[0] !== 0x00) {
         // Bytes remain in input buffer. Perhaps this is another compressed
         // member in the same archive, or just trailing garbage.
-        // Check the header to find out.
-        if (this.strm.next_in[0] !== GZIP_HEADER_ID1 ||
-            this.strm.next_in[1] !== GZIP_HEADER_ID2) {
-          // Not a valid gzip member
-          break
-        }
+        // Trailing zero bytes are okay, though, since they are frequently
+        // used for padding.
+
         this.reset()
         this.err = zlib_inflate.inflate(this.strm, this.flush)
       }
@@ -250,6 +286,9 @@ Zlib.prototype._after = function () {
 }
 
 Zlib.prototype._error = function (message) {
+  if (this.strm.msg) {
+    message = this.strm.msg
+  }
   this.onerror(message, this.err)
 
   // no hope of rescue.
@@ -262,7 +301,7 @@ Zlib.prototype._error = function (message) {
 Zlib.prototype.init = function (windowBits, level, memLevel, strategy, dictionary) {
   assert(arguments.length === 4 || arguments.length === 5, 'init(windowBits, level, memLevel, strategy, [dictionary])')
 
-  assert(windowBits >= 6 && windowBits <= 15, 'invalid windowBits')
+  assert(windowBits >= 8 && windowBits <= 15, 'invalid windowBits')
   assert(level >= -1 && level <= 9, 'invalid compression level')
 
   assert(memLevel >= 1 && memLevel <= 9, 'invalid memlevel')
@@ -387,13 +426,6 @@ Zlib.prototype._reset = function () {
 
   if (this.err !== exports.Z_OK) {
     this._error('Failed to reset stream')
-  }
-}
-
-// set method for Node buffers, used by pako
-function bufferSet (data, offset) {
-  for (var i = 0; i < data.length; i++) {
-    this[offset + i] = data[i]
   }
 }
 

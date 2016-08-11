@@ -1,61 +1,45 @@
-/* eslint-env mocha */
-'use strict'
-
+'use strict';
 // test uncompressing invalid input
-var assert = require('assert')
-var zlib = require('../')
 
-var nonStringInputs = [1, true, {a: 1}, ['a']]
+require('./common');
+const assert = require('assert');
+const zlib = require('../');
 
-describe('zlib - invalid input', function () {
-  it('non strings', function (done) {
-    var i = 0
-    var finish = function () {
-      i++
-      if (i === 3) {
-        done()
-      }
-    }
-    nonStringInputs.forEach(function (input) {
-      // zlib.gunzip should not throw an error when called with bad input.
-      assert.doesNotThrow(function () {
-        zlib.gunzip(input, function (err, buffer) {
-          // zlib.gunzip should pass the error to the callback.
-          assert.ok(err)
-          finish()
-        })
-      })
-    })
-  })
+var nonStringInputs = [1, true, {a: 1}, ['a']];
 
-  it('unzips', function (done) {
-    // zlib.Unzip classes need to get valid data, or else they'll throw.
-    var unzips = [
-      zlib.Unzip(),
-      zlib.Gunzip(),
-      zlib.Inflate(),
-      zlib.InflateRaw()
-    ]
-    var hadError = []
+console.error('Doing the non-strings');
+nonStringInputs.forEach(function(input) {
+  // zlib.gunzip should not throw an error when called with bad input.
+  assert.doesNotThrow(function() {
+    zlib.gunzip(input, function(err, buffer) {
+      // zlib.gunzip should pass the error to the callback.
+      assert.ok(err);
+    });
+  });
+});
 
-    var finish = function (i) {
-      hadError[i] = true
-      if (hadError.length === 4) {
-        assert.deepEqual(hadError, [true, true, true, true], 'expect 4 errors')
-        done()
-      }
-    }
-    unzips.forEach(function (uz, i) {
-      uz.on('error', function (er) {
-        finish(i)
-      })
+console.error('Doing the unzips');
+// zlib.Unzip classes need to get valid data, or else they'll throw.
+var unzips = [ zlib.Unzip(),
+               zlib.Gunzip(),
+               zlib.Inflate(),
+               zlib.InflateRaw() ];
+var hadError = [];
+unzips.forEach(function(uz, i) {
+  console.error('Error for ' + uz.constructor.name);
+  uz.on('error', function(er) {
+    console.error('Error event', er);
+    hadError[i] = true;
+  });
 
-      uz.on('end', function (er) {
-        throw new Error('end event should not be emitted ' + uz.constructor.name)
-      })
+  uz.on('end', function(er) {
+    throw new Error('end event should not be emitted ' + uz.constructor.name);
+  });
 
-      // this will trigger error event
-      uz.write('this is not valid compressed data.')
-    })
-  })
-})
+  // this will trigger error event
+  uz.write('this is not valid compressed data.');
+});
+
+process.on('exit', function() {
+  assert.deepStrictEqual(hadError, [true, true, true, true], 'expect 4 errors');
+});

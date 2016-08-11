@@ -1,20 +1,12 @@
-/* eslint-env mocha */
-'use strict'
+'use strict';
+const common = require('./common');
+var assert = require('assert');
+var zlib = require('../');
 
-var assert = require('assert')
-var zlib = require('../')
-
-describe('zlib - write after close', function () {
-  it('works', function (done) {
-    zlib.gzip('hello', function (err, out) {
-      if (err) throw err
-      var unzip = zlib.createGunzip()
-      unzip.close(function () {
-        done()
-      })
-      assert.throws(function () {
-        unzip.write(out)
-      })
-    })
-  })
-})
+zlib.gzip('hello', common.mustCall(function(err, out) {
+  var unzip = zlib.createGunzip();
+  unzip.close(common.mustCall(function() {}));
+  assert.throws(function() {
+    unzip.write(out);
+  });
+}));

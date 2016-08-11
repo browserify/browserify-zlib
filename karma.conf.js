@@ -1,14 +1,7 @@
 module.exports = function (karma) {
   karma.set({
-    frameworks: ['browserify', 'mocha'],
-    files: ['test/**/test-*.js'],
-    preprocessors: {
-      'test/**/test-*.js': ['browserify']
-    },
-    browserify: {
-      debug: true,
-      transform: ['brfs']
-    },
+    frameworks: ['mocha'],
+    files: ['test/tmp/browserified.js'],
     reporters: ['mocha-own'],
     mochaOwnReporter: {
       reporter: 'spec'

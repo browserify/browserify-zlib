@@ -1,11 +1,29 @@
 'use strict'
+/* global emitOnexit:true */ // eslint-disable-line no-unused-vars
 
 var path = require('path')
 var fs = require('fs')
+var stream = require('stream')
+var EventEmitter = require('events')
 
 exports.fixturesDir = path.join(__dirname, 'fixtures')
 
 var mustCallChecks = []
+
+if (process.on === process.emit) {
+  let emitter
+  const reset = () => {
+    mustCallChecks = []
+    emitter = new EventEmitter()
+    process.on = emitter.on.bind(emitter)
+    process.once = emitter.once.bind(emitter)
+  }
+  emitOnexit = () => {
+    emitter.emit('exit')
+    reset()
+  }
+  reset()
+}
 
 function runCallChecks (exitCode) {
   if (exitCode !== 0) return
@@ -98,4 +116,51 @@ function rimrafSync (p) {
 exports.refreshTmpDir = function () {
   rimrafSync(exports.tmpDir)
   fs.mkdirSync(exports.tmpDir)
+}
+
+const rFS = 'readFileSync' // this stops the brfs static analyzer
+if (!fs[rFS]) {
+  // this is to make it work with brfs
+  const files = {
+    'elipses.txt': fs.readFileSync(path.resolve('test/fixtures', 'elipses.txt')),
+    // there is a strange issue like https://github.com/nodejs/node-v0.x-archive/issues/7914,
+    // even though that should be fixed.
+    'empty.txt': Buffer.alloc(0),
+    // 'empty.txt': fs.readFileSync(path.resolve('test/fixtures', 'empty.txt')),
+    'person.jpg': fs.readFileSync(path.resolve('test/fixtures', 'person.jpg')),
+    'person.jpg.gz': fs.readFileSync(path.resolve('test/fixtures', 'person.jpg.gz')),
+    'pseudo-multimember-gzip.gz': fs.readFileSync(path.resolve('test/fixtures', 'pseudo-multimember-gzip.gz')),
+    'pseudo-multimember-gzip.z': fs.readFileSync(path.resolve('test/fixtures', 'pseudo-multimember-gzip.z'))
+  }
+  Object.keys(files).forEach(file => {
+    files[path.resolve(exports.fixturesDir, file)] = files[file]
+  })
+
+  fs[rFS] = name => {
+    if (!files[name]) throw new Error(`file "${name}" not found`)
+    return files[name]
+  }
+
+  const cRS = 'createReadStream'
+  fs[cRS] = name => {
+    const s = new stream.Readable()
+    s.push(fs.readFileSync(name))
+    s.push(null)
+    return s
+  }
+
+  fs.createWriteStream = name => {
+    const s = new stream.Writable()
+    const chunks = []
+    s._write = (chunk, encoding, callback) => {
+      chunks.push(chunk)
+      callback()
+    }
+    s.on('finish', () => {
+      files[name] = Buffer.concat(chunks)
+    })
+    return s
+  }
+
+  exports.refreshTmpDir = () => {}
 }
