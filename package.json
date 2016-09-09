@@ -1,6 +1,6 @@
 {
   "name": "browserify-zlib",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Full zlib module for browserify",
   "keywords": [
     "zlib",
