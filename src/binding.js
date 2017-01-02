@@ -1,8 +1,8 @@
-var msg = require('pako/lib/zlib/messages');
-var zstream = require('pako/lib/zlib/zstream');
-var zlib_deflate = require('pako/lib/zlib/deflate.js');
-var zlib_inflate = require('pako/lib/zlib/inflate.js');
-var constants = require('pako/lib/zlib/constants');
+var msg = require('pako-lite/lib/zlib/messages');
+var zstream = require('pako-lite/lib/zlib/zstream');
+var zlib_deflate = require('pako-lite/lib/zlib/deflate.js');
+var zlib_inflate = require('pako-lite/lib/zlib/inflate.js');
+var constants = require('pako-lite/lib/zlib/constants');
 
 for (var key in constants) {
   exports[key] = constants[key];
