@@ -1,9 +1,8 @@
 sudo: false
 language: node_js
 node_js:
-  - 4
   - 6
-  - stable
+  - 7
 
 before_install:
   - "export DISPLAY=:99.0"
