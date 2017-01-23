@@ -231,7 +231,8 @@ function zlibBuffer(engine, buffer, callback) {
 function zlibBufferSync(engine, buffer) {
   if (typeof buffer === 'string')
     buffer = Buffer.from(buffer);
-  if (!(buffer instanceof Buffer))
+
+  if (!Buffer.isBuffer(buffer))
     throw new TypeError('Not a string or buffer');
 
   var flushFlag = engine._finishFlushFlag;
@@ -352,7 +353,7 @@ function Zlib(opts, mode) {
   }
 
   if (opts.dictionary) {
-    if (!(opts.dictionary instanceof Buffer)) {
+    if (!Buffer.isBuffer(opts.dictionary)) {
       throw new Error('Invalid dictionary: it should be a Buffer instance');
     }
   }
@@ -492,7 +493,7 @@ Zlib.prototype._transform = function(chunk, encoding, cb) {
   var ending = ws.ending || ws.ended;
   var last = ending && (!chunk || ws.length === chunk.length);
 
-  if (chunk !== null && !(chunk instanceof Buffer))
+  if (chunk !== null && !Buffer.isBuffer(chunk))
     return cb(new Error('invalid input'));
 
   if (!this._handle)
