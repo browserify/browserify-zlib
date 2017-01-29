@@ -2,8 +2,14 @@
   "name": "browserify-zlib",
   "version": "0.1.4",
   "description": "Full zlib module for browserify",
-  "keywords": ["zlib", "browserify"],
-  "main": "index.js",
+  "keywords": [
+    "zlib",
+    "browserify"
+  ],
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
   "directories": {
     "test": "test"
   },
@@ -11,8 +17,9 @@
     "pako": "~0.2.0"
   },
   "devDependencies": {
-    "tape": "^2.12.3",
-    "brfs": "^1.0.1"
+    "brfs": "^1.0.1",
+    "nyc": "^10.1.2",
+    "tape": "^2.12.3"
   },
   "testling": {
     "files": "test/*.js",
@@ -28,9 +35,8 @@
     ]
   },
   "scripts": {
-    "test": "node_modules/tape/bin/tape test/*.js"
+    "test": "nyc tape test/*.js"
   },
-  "main": "src/index.js",
   "author": "Devon Govett <devongovett@gmail.com>",
   "license": "MIT",
   "repository": {
