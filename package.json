@@ -3,7 +3,6 @@
   "version": "0.1.4",
   "description": "Full zlib module for browserify",
   "keywords": ["zlib", "browserify"],
-  "main": "index.js",
   "directories": {
     "test": "test"
   },
