@@ -102,7 +102,7 @@ Zlib.prototype._write = function (async, flush, input, in_off, in_len, out, out_
   }
 
   if (input == null) {
-    input = new Buffer(0)
+    input = Buffer.alloc(0)
     in_len = 0
     in_off = 0
   }
