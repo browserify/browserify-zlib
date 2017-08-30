@@ -7,7 +7,7 @@
 
 Emulates Node's [zlib](https://nodejs.org/api/zlib.html) module for the browser. Can be used as a drop in replacement with [Browserify](http://browserify.org) and [webpack](http://webpack.github.io/).
 
-The heavy lifting is done using [pako](https://github.com/nodeca/pako). The code in this module is modeled closely after the code in the source of Node core to get as much compatability as possible.
+The heavy lifting is done using [pako](https://github.com/nodeca/pako). The code in this module is modeled closely after the code in the source of Node core to get as much compatibility as possible.
 
 ## API
 
