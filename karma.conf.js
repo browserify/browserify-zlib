@@ -6,6 +6,6 @@ module.exports = function (karma) {
     mochaOwnReporter: {
       reporter: 'spec'
     },
-    browsers: process.env.TRAVIS ? ['Firefox', 'PhantomJS'] : ['Chrome', 'PhantomJS']
+    browsers: process.env.TRAVIS ? ['Firefox'] : ['Firefox', 'Chrome']
   })
 }
