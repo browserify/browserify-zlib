@@ -223,7 +223,7 @@ Zlib.prototype._process = function () {
       while (this.strm.avail_in > 0 &&
              this.mode === exports.GUNZIP &&
              this.err === exports.Z_STREAM_END &&
-             this.strm.next_in[0] !== 0x00) {
+             this.strm.input[this.strm.next_in] !== 0x00) {
         // Bytes remain in input buffer. Perhaps this is another compressed
         // member in the same archive, or just trailing garbage.
         // Trailing zero bytes are okay, though, since they are frequently
