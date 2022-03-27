@@ -53,7 +53,7 @@ const inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing eli'
     assert.doesNotThrow(function() {
       const result = zlib[methods.decompSync](truncated, syncFlushOpt)
         .toString();
-      assert.equal(result, inputString.substr(0, result.length));
+      assert.equal(result, inputString.slice(0, result.length));
     });
 
     // async truncated input test, finishFlush = Z_SYNC_FLUSH
@@ -61,7 +61,7 @@ const inputString = 'ΩΩLorem ipsum dolor sit amet, consectetur adipiscing eli'
       assert.ifError(err);
 
       const result = decompressed.toString();
-      assert.equal(result, inputString.substr(0, result.length));
+      assert.equal(result, inputString.slice(0, result.length));
     });
   });
 });
