@@ -30,6 +30,22 @@ binding.Z_MIN_LEVEL = -1;
 binding.Z_MAX_LEVEL = 9;
 binding.Z_DEFAULT_LEVEL = binding.Z_DEFAULT_COMPRESSION;
 
+const constants = process.binding('constants').zlib;
+const {
+  // Zlib flush levels
+  Z_NO_FLUSH, Z_BLOCK, Z_PARTIAL_FLUSH, Z_SYNC_FLUSH, Z_FULL_FLUSH, Z_FINISH,
+  // Zlib option values
+  Z_MIN_CHUNK, Z_MIN_WINDOWBITS, Z_MAX_WINDOWBITS, Z_MIN_LEVEL, Z_MAX_LEVEL,
+  Z_MIN_MEMLEVEL, Z_MAX_MEMLEVEL, Z_DEFAULT_CHUNK, Z_DEFAULT_COMPRESSION,
+  Z_DEFAULT_STRATEGY, Z_DEFAULT_WINDOWBITS, Z_DEFAULT_MEMLEVEL, Z_FIXED,
+  // Node's compression stream modes (node_zlib_mode)
+  DEFLATE, DEFLATERAW, INFLATE, INFLATERAW, GZIP, GUNZIP, UNZIP,
+  BROTLI_DECODE, BROTLI_ENCODE,
+  // Brotli operations (~flush levels)
+  BROTLI_OPERATION_PROCESS, BROTLI_OPERATION_FLUSH,
+  BROTLI_OPERATION_FINISH
+} = constants;
+
 // expose all the zlib constants
 const bkeys = Object.keys(binding);
 for (var bk = 0; bk < bkeys.length; bk++) {
@@ -284,12 +300,12 @@ function Unzip(opts) {
 }
 
 function isValidFlushFlag(flag) {
-  return flag === binding.Z_NO_FLUSH ||
-         flag === binding.Z_PARTIAL_FLUSH ||
-         flag === binding.Z_SYNC_FLUSH ||
-         flag === binding.Z_FULL_FLUSH ||
-         flag === binding.Z_FINISH ||
-         flag === binding.Z_BLOCK;
+  return flag === Z_NO_FLUSH ||
+         flag === Z_PARTIAL_FLUSH ||
+         flag === Z_SYNC_FLUSH ||
+         flag === Z_FULL_FLUSH ||
+         flag === Z_FINISH ||
+         flag === Z_BLOCK;
 }
 
 // the Zlib class they all inherit from
@@ -310,9 +326,9 @@ function Zlib(opts, mode) {
     throw new Error('Invalid flush flag: ' + opts.finishFlush);
   }
 
-  this._flushFlag = opts.flush || binding.Z_NO_FLUSH;
+  this._flushFlag = opts.flush || Z_NO_FLUSH;
   this._finishFlushFlag = typeof opts.finishFlush !== 'undefined' ?
-    opts.finishFlush : binding.Z_FINISH;
+    opts.finishFlush : Z_FINISH;
 
   if (opts.chunkSize) {
     if (opts.chunkSize < exports.Z_MIN_CHUNK ||
@@ -417,7 +433,7 @@ Zlib.prototype.params = function(level, strategy, callback) {
 
   if (this._level !== level || this._strategy !== strategy) {
     var self = this;
-    this.flush(binding.Z_SYNC_FLUSH, function() {
+    this.flush(Z_SYNC_FLUSH, function() {
       assert(self._handle, 'zlib binding closed');
       self._handle.params(level, strategy);
       if (!self._hadError) {
@@ -447,7 +463,7 @@ Zlib.prototype.flush = function(kind, callback) {
 
   if (typeof kind === 'function' || (kind === undefined && !callback)) {
     callback = kind;
-    kind = binding.Z_FULL_FLUSH;
+    kind = Z_FULL_FLUSH;
   }
 
   if (ws.ended) {
@@ -511,7 +527,7 @@ Zlib.prototype._transform = function(chunk, encoding, cb) {
     // once we've flushed the last of the queue, stop flushing and
     // go back to the normal behavior.
     if (chunk.length >= ws.length) {
-      this._flushFlag = this._opts.flush || binding.Z_NO_FLUSH;
+      this._flushFlag = this._opts.flush || Z_NO_FLUSH;
     }
   }
 
