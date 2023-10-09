@@ -3,10 +3,10 @@
 
 var assert = require('assert')
 
-var Zstream = require('pako/lib/zlib/zstream')
+var Zstream = require('pako/lib/zlib/zstream.js')
 var zlib_deflate = require('pako/lib/zlib/deflate.js')
 var zlib_inflate = require('pako/lib/zlib/inflate.js')
-var constants = require('pako/lib/zlib/constants')
+var constants = require('pako/lib/zlib/constants.js')
 
 for (var key in constants) {
   exports[key] = constants[key]
