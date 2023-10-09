@@ -2,7 +2,7 @@
 
 const Buffer = require('buffer').Buffer;
 const Transform = require('stream').Transform;
-const binding = require('./binding');
+const binding = require('./binding.js');
 const util = require('util');
 const assert = require('assert').ok;
 const kMaxLength = require('buffer').kMaxLength;
